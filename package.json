@@ -1,0 +1,60 @@
+const express = require('express');
+const axios = require('axios');
+const path = require('path');
+const bodyParser = require('body-parser');
+
+const app = express();
+app.use(express.json());
+app.use(bodyParser.json());
+
+const shareHistory = [];
+
+app.get('/share-history', (req, res) => {
+  try {
+    res.json(shareHistory);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.post('/api/submit', async (req, res) => {
+  try {
+    const { accessToken, url, amount, interval, deleteAfter } = req.body;
+    if (!accessToken || !url || !amount || !interval || !deleteAfter) {
+      throw new Error('Missing required parameters');
+    }
+
+    await share(accessToken, url, amount, interval, deleteAfter);
+
+    res.status(200).json({ status: 200, accessToken });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+async function share(accessToken, url, amount, interval, deleteAfter) {
+  try {
+    const id = await getPostID(url);
+    if (!id) {
+      throw new Error("Unable to get link id: invalid URL, it's either a private post or visible to friends only");
+    }
+
+    const shareUrl = `https://m.facebook.com/${id}`;
+
+    let sharedCount = 0;
+
+    async function sharePost() {
+      try {
+        const response = await axios.post(
+          `https://graph.facebook.com/me/feed?access_token=${accessToken}&fields=id&limit=1&published=0`,
+          {
+            link: shareUrl,
+            privacy: { value: 'SELF' },
+            no_story: true,
+          },
+          {
+            muteHttpExceptions: true,
