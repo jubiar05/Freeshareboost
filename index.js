@@ -48,6 +48,7 @@ app.post('/api/submit', async (req, res) => {
 
     res.status(200).json({ status: 200, accessToken });
   } catch (error) {
+    console.error('Error submitting:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -88,6 +89,7 @@ async function share(accessToken, url, amount, interval) {
       } catch (error) {
         clearInterval(timer);
         total.delete(postId);
+        console.error('Error sharing post:', error.message);
         throw new Error(`Error sharing post: ${error.message}`);
       }
     }, interval * 1000);
@@ -100,6 +102,7 @@ async function share(accessToken, url, amount, interval) {
     // Add to share history
     shareHistory.push({ accessToken, url, amount, interval });
   } catch (error) {
+    console.error('Error initiating sharing process:', error.message);
     throw new Error(`Error initiating sharing process: ${error.message}`);
   }
 }
@@ -113,6 +116,7 @@ async function getPostID(url) {
     });
     return response.data.id;
   } catch (error) {
+    console.error('Error getting post ID:', error.message);
     throw new Error('Failed to get post ID: ' + (error.message || 'Unknown error'));
   }
 }
@@ -121,4 +125,3 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-        
